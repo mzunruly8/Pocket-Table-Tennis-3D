@@ -1,33 +1,68 @@
-let startX = 0;
-let startY = 0;
+let inputState = {
+    pointerId: null,
+    startX: 0,
+    startY: 0,
+    currentX: 0,
+    currentY: 0,
+    keys: new Set()
+};
 
 function initInput(paddle) {
-    window.addEventListener("touchstart", e => {
-        startX = e.touches[0].clientX;
-        startY = e.touches[0].clientY;
+    const container = document.getElementById("game-container");
+
+    container.addEventListener("pointerdown", event => {
+        if (event.pointerType === "mouse" && event.button !== 0) return;
+        inputState.pointerId = event.pointerId;
+        inputState.startX = event.clientX;
+        inputState.startY = event.clientY;
+        inputState.currentX = event.clientX;
+        inputState.currentY = event.clientY;
+        container.setPointerCapture?.(event.pointerId);
     });
 
-    window.addEventListener("touchmove", e => {
-        const dx = e.touches[0].clientX - startX;
-        paddle.position.x = THREE.MathUtils.clamp(dx / 80, -4, 4);
+    container.addEventListener("pointermove", event => {
+        if (event.pointerId !== inputState.pointerId || UI.paused() || UI.gameOver()) return;
+        inputState.currentX = event.clientX;
+        inputState.currentY = event.clientY;
+        const normalizedX = (event.clientX / window.innerWidth - 0.5) * 8;
+        paddle.position.x = THREE.MathUtils.clamp(normalizedX, -4.1, 4.1);
     });
 
-    window.addEventListener("touchend", e => {
-        const dx = e.changedTouches[0].clientX - startX;
-        const dy = e.changedTouches[0].clientY - startY;
-
-        hitBall(dx, dy);
+    container.addEventListener("pointerup", event => {
+        if (event.pointerId !== inputState.pointerId) return;
+        const dx = event.clientX - inputState.startX;
+        const dy = event.clientY - inputState.startY;
+        inputState.pointerId = null;
+        container.releasePointerCapture?.(event.pointerId);
+        attemptPlayerSwing(dx, dy);
     });
+
+    container.addEventListener("pointercancel", () => {
+        inputState.pointerId = null;
+    });
+
+    window.addEventListener("keydown", event => {
+        inputState.keys.add(event.key.toLowerCase());
+        if (["arrowleft", "arrowright", "a", "d", " "].includes(event.key.toLowerCase())) event.preventDefault();
+        if (event.key === " " && !UI.paused()) attemptPlayerSwing(0, -90);
+    });
+
+    window.addEventListener("keyup", event => inputState.keys.delete(event.key.toLowerCase()));
 }
 
-function hitBall(dx, dy) {
-    // Forward swipe = hit
-    if (dy < -30) {
-        ball.velocity.z = -0.3;
-        ball.velocity.y = 0.05;
+function updatePlayerInput(paddle, dt) {
+    const left = inputState.keys.has("arrowleft") || inputState.keys.has("a");
+    const right = inputState.keys.has("arrowright") || inputState.keys.has("d");
+    paddle.position.x += (right - left) * 5.5 * dt;
+    paddle.position.x = THREE.MathUtils.clamp(paddle.position.x, -4.1, 4.1);
+}
 
-        // Spin
-        ball.spin.x = dx * 0.02;
-        ball.spin.y = dy * -0.01;
-    }
+function attemptPlayerSwing(dx, dy) {
+    const distance = Math.hypot(dx, dy);
+    if (distance < 18 || UI.paused() || UI.gameOver()) return;
+    const strength = THREE.MathUtils.clamp(distance / 110, 0.45, 1.55);
+    const aim = THREE.MathUtils.clamp(dx / 100, -1, 1);
+    const topspin = THREE.MathUtils.clamp(-dy / 100, -1, 1);
+    const hit = hitBallFromPaddle(ball, playerPaddle, "player", { strength, aim, topspin, sidespin: dx / 120 });
+    if (hit) UI.setStatus("Rally on");
 }

@@ -1,22 +1,61 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <meta name="description" content="A pocket-sized 3D table tennis game.">
     <title>Pocket Table Tennis 3D</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div id="game-container"></div>
+    <main id="game-container" aria-label="Pocket Table Tennis 3D game"></main>
+
+    <section id="hud" aria-live="polite">
+        <div class="score-card">
+            <span class="score-label">YOU</span>
+            <strong id="playerScore">0</strong>
+        </div>
+        <div class="score-divider">:</div>
+        <div class="score-card opponent-score">
+            <span class="score-label">CPU</span>
+            <strong id="opponentScore">0</strong>
+        </div>
+        <div class="status-panel">
+            <span id="statusText">Your serve</span>
+            <span id="speedIndicator">Speed 0.0</span>
+            <span id="spinIndicator">Spin 0.0</span>
+        </div>
+    </section>
+
+    <button id="pauseBtn" class="icon-button" type="button" aria-label="Pause game">Ⅱ</button>
+    <p id="helpText">Drag to aim · Swipe up to hit · Arrow keys move</p>
+
+    <section id="pauseMenu" class="modal hidden" aria-labelledby="pauseTitle">
+        <div class="modal-card">
+            <p class="eyebrow">RALLY ON HOLD</p>
+            <h1 id="pauseTitle">Paused</h1>
+            <button id="resumeBtn" class="primary-button" type="button">Resume</button>
+            <button id="pauseRestartBtn" class="secondary-button" type="button">Restart match</button>
+        </div>
+    </section>
+
+    <section id="endScreen" class="modal hidden" aria-labelledby="endMessage">
+        <div class="modal-card">
+            <p class="eyebrow">MATCH COMPLETE</p>
+            <h1 id="endMessage">You win!</h1>
+            <p id="finalScore"></p>
+            <button id="restartBtn" class="primary-button" type="button">Play again</button>
+        </div>
+    </section>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-
-    <script src="physics.js"></script>
-    <script src="input.js"></script>
-    <script src="ai.js"></script>
     <script src="table.js"></script>
     <script src="paddle.js"></script>
     <script src="ball.js"></script>
+    <script src="physics.js"></script>
+    <script src="ai.js"></script>
+    <script src="input.js"></script>
     <script src="ui.js"></script>
     <script src="main.js"></script>
-    <script src="swing.js"></script>
 </body>
 </html>

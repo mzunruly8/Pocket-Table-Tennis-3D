@@ -1,37 +1,26 @@
-// ===============================
-// UI STATE
-// ===============================
 let playerScore = 0;
 let opponentScore = 0;
 let paused = false;
+let gameOver = false;
 
-// Cached DOM elements
 const ui = {
     playerScore: document.getElementById("playerScore"),
     opponentScore: document.getElementById("opponentScore"),
     spinIndicator: document.getElementById("spinIndicator"),
     speedIndicator: document.getElementById("speedIndicator"),
+    statusText: document.getElementById("statusText"),
     pauseBtn: document.getElementById("pauseBtn"),
     pauseMenu: document.getElementById("pauseMenu"),
     resumeBtn: document.getElementById("resumeBtn"),
+    pauseRestartBtn: document.getElementById("pauseRestartBtn"),
     endScreen: document.getElementById("endScreen"),
     endMessage: document.getElementById("endMessage"),
+    finalScore: document.getElementById("finalScore"),
     restartBtn: document.getElementById("restartBtn")
 };
 
-// ===============================
-// SCORE SYSTEM
-// ===============================
-function addPointToPlayer() {
-    playerScore++;
-    updateScoreUI();
-    checkWinCondition();
-}
-
-function addPointToOpponent() {
-    opponentScore++;
-    updateScoreUI();
-    checkWinCondition();
+function setStatus(message) {
+    ui.statusText.textContent = message;
 }
 
 function updateScoreUI() {
@@ -39,63 +28,74 @@ function updateScoreUI() {
     ui.opponentScore.textContent = opponentScore;
 }
 
-// ===============================
-// SPIN + SPEED INDICATORS
-// ===============================
 function updateSpinUI(spinValue) {
-    ui.spinIndicator.textContent = "Spin: " + spinValue.toFixed(2);
+    ui.spinIndicator.textContent = `Spin ${spinValue.toFixed(1)}`;
 }
 
 function updateSpeedUI(speedValue) {
-    ui.speedIndicator.textContent = "Speed: " + speedValue.toFixed(2);
+    ui.speedIndicator.textContent = `Speed ${speedValue.toFixed(1)}`;
 }
 
-// ===============================
-// PAUSE SYSTEM
-// ===============================
-ui.pauseBtn.onclick = () => {
-    paused = true;
-    ui.pauseMenu.classList.remove("hidden");
-};
+function setPaused(value) {
+    paused = value;
+    ui.pauseMenu.classList.toggle("hidden", !paused);
+    ui.pauseBtn.setAttribute("aria-label", paused ? "Resume game" : "Pause game");
+}
 
-ui.resumeBtn.onclick = () => {
+function addPointToPlayer() {
+    playerScore += 1;
+    finishPoint("player");
+}
+
+function addPointToOpponent() {
+    opponentScore += 1;
+    finishPoint("opponent");
+}
+
+function finishPoint(winner) {
+    updateScoreUI();
+    if ((playerScore >= 11 || opponentScore >= 11) && Math.abs(playerScore - opponentScore) >= 2) {
+        gameOver = true;
+        setPaused(true);
+        ui.pauseMenu.classList.add("hidden");
+        ui.endMessage.textContent = winner === "player" ? "You win!" : "You lose";
+        ui.finalScore.textContent = `${playerScore} — ${opponentScore}`;
+        ui.endScreen.classList.remove("hidden");
+        return;
+    }
+    setStatus(winner === "player" ? "Point to you" : "Point to CPU");
+    window.setTimeout(() => {
+        if (!gameOver) {
+            setPaused(false);
+            setStatus(winner === "player" ? "Your serve" : "CPU serve");
+            serveBall(ball, winner === "player" ? "player" : "opponent");
+        }
+    }, 650);
+}
+
+function resetMatch() {
+    playerScore = 0;
+    opponentScore = 0;
     paused = false;
+    gameOver = false;
+    ui.endScreen.classList.add("hidden");
     ui.pauseMenu.classList.add("hidden");
-};
-
-// ===============================
-// END SCREEN
-// ===============================
-function showEndScreen(message) {
-    ui.endMessage.textContent = message;
-    ui.endScreen.classList.remove("hidden");
-    paused = true;
+    updateScoreUI();
+    setStatus("Your serve");
+    serveBall(ball, "player");
 }
 
-ui.restartBtn.onclick = () => {
-    location.reload();
-};
+ui.pauseBtn.onclick = () => setPaused(!paused);
+ui.resumeBtn.onclick = () => setPaused(false);
+ui.pauseRestartBtn.onclick = resetMatch;
+ui.restartBtn.onclick = resetMatch;
 
-// ===============================
-// WIN / LOSE LOGIC
-// ===============================
-function checkWinCondition() {
-    if (playerScore >= 11 && playerScore - opponentScore >= 2) {
-        showEndScreen("You Win!");
-    }
-
-    if (opponentScore >= 11 && opponentScore - playerScore >= 2) {
-        showEndScreen("You Lose!");
-    }
-}
-
-// ===============================
-// EXPORTS (if needed)
-// ===============================
 window.UI = {
     addPointToPlayer,
     addPointToOpponent,
     updateSpinUI,
     updateSpeedUI,
-    paused: () => paused
-};// UI can be added later (score, spin meter, etc.)
+    setStatus,
+    paused: () => paused,
+    gameOver: () => gameOver
+};
