@@ -128,4 +128,3 @@ if (paddle.userData.swingAngleZ === undefined) {
             0.8
         );
 }
-}
