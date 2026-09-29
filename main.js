@@ -47,22 +47,67 @@ function resize() {
     renderer.setSize(window.innerWidth, window.innerHeight);
 }
 
-function animate(now) {
-    requestAnimationFrame(animate);
-    const dt = lastFrame ? (now - lastFrame) / 1000 : 0;
-    lastFrame = now;
 
-    if (!UI.paused() && !UI.gameOver()) {
-        updatePlayerInput(playerPaddle, dt);
-        const physicsEvent = updateBallPhysics(ball, dt);
-        updateAI(opponentPaddle, ball, now);
-        resolveGameEvents(physicsEvent);
-        animatePaddles(now);
-        UI.updateSpeedUI(ball.velocity.length());
-        UI.updateSpinUI(ball.spin.length());
+
+function animatePaddles(now, dt) {
+    for (const paddle of [playerPaddle, opponentPaddle]) {
+        const data = paddle.userData;
+
+        const swingActive = data.swingUntil > now;
+
+        if (swingActive) {
+            const progress = THREE.MathUtils.clamp(
+                (now - data.swingStart) / data.swingDuration,
+                0,
+                1
+            );
+
+            // Wind-up
+            if (progress < 0.25) {
+                const windup =
+                    progress / 0.25;
+
+                paddle.rotation.x =
+                    -data.swingAngleX *
+                    0.35 *
+                    windup;
+
+                paddle.rotation.z =
+                    -data.swingAngleZ *
+                    0.35 *
+                    windup;
+            }
+
+            // Forward swing + follow-through
+            else {
+                const follow =
+                    (progress - 0.25) / 0.75;
+
+                const eased =
+                    1 - Math.pow(1 - follow, 3);
+
+                paddle.rotation.x =
+                    data.swingAngleX *
+                    eased;
+
+                paddle.rotation.z =
+                    data.swingAngleZ *
+                    eased;
+            }
+        } else {
+            // Return smoothly to neutral position.
+            paddle.rotation.x +=
+                (data.targetRotationX - paddle.rotation.x) *
+                Math.min(1, dt * 14);
+
+            paddle.rotation.z +=
+                (data.targetRotationZ - paddle.rotation.z) *
+                Math.min(1, dt * 14);
+
+            data.targetRotationX *= 0.88;
+            data.targetRotationZ *= 0.88;
+        }
     }
-
-    renderer.render(scene, camera);
 }
 
 function resolveGameEvents(event) {
