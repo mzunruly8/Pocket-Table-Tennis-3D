@@ -100,6 +100,32 @@ function hitBallFromPaddle(ball, paddle, side, swing) {
     ball.spin.set((swing?.topspin ?? 0) * 1.5, (swing?.sidespin ?? 0) * 1.2, 0);
     ball.lastHit = side;
     ball.bounces = 0;
-    paddle.userData.swingUntil = performance.now() + 130;
-    return true;
+    const now = performance.now();
+
+paddle.userData.swingStart = now;
+
+if (!paddle.userData.swingDuration) {
+    paddle.userData.swingDuration = 180;
+}
+
+paddle.userData.swingUntil =
+    now + paddle.userData.swingDuration;
+
+if (paddle.userData.swingAngleX === undefined) {
+    paddle.userData.swingAngleX =
+        THREE.MathUtils.clamp(
+            (swing?.topspin ?? 0) * 0.55,
+            -0.8,
+            0.8
+        );
+}
+
+if (paddle.userData.swingAngleZ === undefined) {
+    paddle.userData.swingAngleZ =
+        THREE.MathUtils.clamp(
+            -(swing?.aim ?? 0) * 0.65,
+            -0.8,
+            0.8
+        );
+}
 }
